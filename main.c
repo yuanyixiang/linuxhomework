@@ -1,5 +1,5 @@
 
-#include <stdio.h>
+#include "stdio.h"
 #include "list.h"
 #include "string.h"
 char *oes[]={"heroes","negroes","tomatoes","potatoes","zeroes"};
