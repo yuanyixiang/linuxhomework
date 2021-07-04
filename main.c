@@ -136,6 +136,7 @@ void wordRead(){
             *(word + (i++)) = t;
         } else if (i != 0) {
             if(i == 1){
+                if (*word!= 'a')
                 goto redo;
             }
             *(word + i) = '\0';
