@@ -1,10 +1,11 @@
+
 #include <stdio.h>
 #include "list.h"
 #include "string.h"
 char *oes[]={"heroes","negroes","tomatoes","potatoes","zeroes"};
 char *fs[]={"thieves","wolves","halves","leaves","shelves"};
 char *fes[]={"wives","lives","knives"};
-struct Word_list{
+struct LinkedWord{
     int times;
     char *word ;
     struct list_head list;
@@ -13,15 +14,15 @@ struct Word_list{
 //判断是否是字母
 int isLetter(int letter)
 {
-if (letter>=65&&letter<=90) return 0;
-if (letter>=97&&letter<=122) return 1;
-return -1;
+    if (letter>=65&&letter<=90) return 0;
+    if (letter>=97&&letter<=122) return 1;
+    return -1;
 }
 
 //判断 是否是虚词
-int isConnective(char* word){
-    char *arr[]={"in\0","on\0","from\0","above\0","behind\0","at\0","by\0","for\0","from\0","in\0"," of\0","on\0","to","with\0","onto\0","into\0","within\0","including\0","in front of\0","because of\0","instead of\0","and\0","both*and\0","as well as\0","not only*but also\0","neither*nor\0","but\0","yet\0","or\0","either*or\0",
-                 "for\0","so\0","oh\0","well\0","hi\0","hell\0","the","a","an","th","am","pm","of"};
+int isVirtualWord(char* word){
+    char *arr[]={"in","on","from","above","behind","at","by","for","from","in"," of","on","to","with","onto","into","within","including","but","yet","or",
+                 "for","so","oh","well","hi","hell","the","a","an","th","am","pm","of"};
     int len=sizeof(arr)/sizeof(arr[0]);
     for (int i=0;i<len;++i){
         if (strcmp(word,arr[i])==0) return -1;
@@ -29,6 +30,7 @@ int isConnective(char* word){
     return 0;
 }
 
+//判断复数
 void complex(char *word){
     int len=sizeof(oes)/sizeof(oes[0]); for (int i=0;i<len;++i) {
         if (strcmp(word,oes[i])==0){
@@ -48,6 +50,7 @@ void complex(char *word){
         }
     }
 }
+//判断复数
 void complex2(char *word){
     if(strcmp(word,"men")==0){
         *(word+1) = 'a';
@@ -75,6 +78,7 @@ void complex2(char *word){
         *(word+2) = 'c';
         *(word+3) = 'e';
     } }
+//判断复数
 int complex3(char *a,char *b){
     int alen = strlen(a);
     int blen = strlen(b);
@@ -106,115 +110,141 @@ int complex3(char *a,char *b){
 
         } }
     return 0; }
-
-    void wordRead(){
-        struct Word_list  *tmp;
-        struct Word_list  wordList;
-        struct Word_list  maxList;
-        INIT_LIST_HEAD(&wordList.list);
-        INIT_LIST_HEAD(&maxList.list);
-        FILE *p = fopen("/Users/rd-yyx/Desktop/test/word2.txt", "r"); //统计单词总数
-        int t = fgetc(p);
-        char *word = (char *) malloc(sizeof(char) * 46);
-        int wordNumber = 0;
-        int i = 0;
-        int change = 0;
-        while (t != -1) {
-            int caps = isLetter(t);
-            if (caps != -1) {//判断是否是大写，如果是大写统一转小写
-                if (caps == 0)
-                {
-                    t = t + 32;
-                }
-                *(word + (i++)) = t;
-            }else if (t == '-' || t == '\'') {
-                *(word + (i++)) = t;
-            } else if (i != 0) {
-                *(word + i) = '\0';
-                wordNumber++;
-                if (isConnective(word) == -1) {
-                    change = 0;//是否有重复单词标志 i=0;//单词⻓度增加标志
-                    i = 0;
-                    word = (char *) malloc(sizeof(char) * 1);
-                    continue;
-                }
-                complex(word);
-                complex2(word);
-                if (list_empty(&(wordList.list)) == 0) {
-                    list_for_each_entry(tmp, &wordList.list, list) {
-                        if (strcmp(word, tmp->word) == 0) {
-                            tmp->times++;
-                            change = 1;
-                        }
-                        if(strlen(word)>3) {
-                            if (change == 0) {
-                                if (complex3(word, tmp->word) == 1) {
-                                    tmp->times++;
-                                    change = 1;
-                                }
+void wordRead(){
+    struct LinkedWord  *tmp;
+    struct LinkedWord  wordList;
+    struct LinkedWord  maxList;
+    INIT_LIST_HEAD(&wordList.list);
+    INIT_LIST_HEAD(&maxList.list);
+    FILE *p = fopen("/Users/rd-yyx/Desktop/test/word2.txt", "r"); //统计单词总数
+    int t = fgetc(p);
+    char *word = (char *) malloc(sizeof(char) * 20);
+    int total = 0;//单词频次总数
+    int i = 0;//用来判断当前单词长度
+    while (t != -1) {
+        int isBig = isLetter(t);
+        if (isBig != -1) {//判断是否是大写，如果是大写统一转小写
+            if (isBig == 0)
+            {
+                t = t + 32;
+            }
+            *(word + (i++)) = t;
+            if (i > 20){
+                word = (char *) realloc(word,sizeof(char) * 46);//如果20个空间不够则分配世界上最长单词长度
+            }
+        }else if (t == '-' || t == '\'') {
+            *(word + (i++)) = t;
+        } else if (i != 0) {
+            if(i == 1){
+                goto redo;
+            }
+            *(word + i) = '\0';
+            total++;
+            if (isVirtualWord(word) == -1) {
+                goto redo;
+            }
+            complex(word);
+            complex2(word);
+            if (list_empty(&(wordList.list)) == 0) {
+                list_for_each_entry(tmp, &wordList.list, list) {
+                    if (strcmp(word, tmp->word) == 0) {
+                        tmp->times++;
+                        goto redo;
+                    }
+                    if(strlen(word)>3) {
+                            if (complex3(word, tmp->word) == 1) {
+                                tmp->times++;
+                                goto redo;
                             }
-                        }
                     }
                 }
-                tmp = (struct Word_list *) malloc(sizeof(struct Word_list));
-                tmp->word = (char *) malloc(sizeof(char) * 46);
-                if (change == 0) {
-                    tmp->times = 1;
-                    tmp->word = word;
-                    list_add_tail(&(tmp->list), &(wordList.list));
-                }
-                change = 0;//是否有重复单词标志
-                i=0;//单词⻓度增加标志
-                word=(char*)malloc(sizeof(char)*46);
-            }
-            t = fgetc(p);
-        }
-        int listSize = 0;
-        list_for_each_entry(tmp, &wordList.list, list){
-            listSize++;
-        }
-        list_for_each_entry(tmp, &wordList.list, list){
-            printf("word=%s\n",tmp->word);
-            printf("times=%d\n",tmp->times);
-        }
-        printf("Recordlist:%d ",listSize);
-        int max = 0;
-        while(listSize > 0){
-            struct Word_list * temp;
-            list_for_each_entry(tmp, &wordList.list, list){
-                if(tmp->times > max){
-                    temp = tmp;
-                    max = tmp->times;
-                }
-            }
-            tmp= (struct Word_list *)malloc(sizeof(struct Word_list));
-            tmp->times =  temp->times;
-            tmp->word = temp->word;
-            list_add_tail(&(tmp->list), &(maxList.list));
-            temp->times = 0;
-            max = 0;
-            listSize--;
-        }
 
-        int N;
-        printf("\ninput N得到前N大频次的比例:");
-        scanf("%d",&N);
-        while (N<=0){
-            printf("reinput N:");
-            scanf("%d",&N);
-        }
-        int k = 1;
-        list_for_each_entry(tmp, &maxList.list, list)
-        {printf("word = %s time = %d frequency = %f\n", tmp->word,tmp->times,((float)(tmp->times))/wordNumber);
-            if(k++ == N){
-                break;
             }
-//        printf("time = %d %d\n",tmp->times,k++);
+            tmp = (struct LinkedWord *) malloc(sizeof(struct LinkedWord));
+            tmp->word = (char *) malloc(sizeof(char) * 20);
+            tmp->times = 1;
+            tmp->word = word;
+            list_add_tail(&(tmp->list), &(wordList.list));
+            redo:
+            i=0;//单词⻓度增加标志
+            word=(char*)malloc(sizeof(char)*46);
         }
-
-        printf("\n");
+        t = fgetc(p);
     }
+    int listSize = 0;
+    list_for_each_entry(tmp, &wordList.list, list){
+        listSize++;
+    }
+    printf("排序前所有的单词统计及频次:\n");
+    i = 0;
+    list_for_each_entry(tmp, &wordList.list, list){
+        if(i++==3) {
+            printf("\n");
+            i=0;
+        }
+        printf("单词=%20s", tmp->word);
+        printf("\t频次=%5d\t", tmp->times);
+    }
+    printf("Recordlist:%d ",listSize);
+    int max = 0;
+    while(list_empty(&(wordList.list)) == 0){
+        struct LinkedWord * temp;
+        list_for_each_entry(tmp, &wordList.list, list){
+            if(tmp->times > max){
+                temp = tmp;
+                max = tmp->times;
+            }
+        }
+        list_move_tail(&(temp->list), &(maxList.list));
+        max = 0;
+    }
+    printf("\n\n\n\n");
+    printf("排序后所有的单词统计及频次:\n");
+    i = 0;
+    list_for_each_entry(tmp, &maxList.list, list){
+        if(i++==3) {
+            printf("\n");
+            i=0;
+        }
+        printf("单词=%20s", tmp->word);
+        printf("\t频次=%5d\t", tmp->times);
+    }
+    char *number = (char*)malloc(sizeof(char)*100);
+    i = 0;
+    char c;
+    printf("\ninput number得到前number大频次的比例(默认50):");
+    scanf("%c",&c);
+    while (c >='0' && c <='9'){
+        number[i++] = c;
+        scanf("%c",&c);
+    }
+    number[i] = '\0';
+    if(number[0] == '\0'){
+        if(listSize > 50){
+            i = 50;
+        }
+        else{
+            i = listSize;
+        }
+    }else{
+        int sum=0;
+        for(int j = 0;j < i;j++){
+            sum = sum*10+number[j]-'0';
+        }
+        i = sum;
+    }
+    int j = 1;
+    list_for_each_entry(tmp, &maxList.list, list)
+    {printf("单词 = %20s 频次 = %6d 比例 = %f\n", tmp->word,tmp->times,((float)(tmp->times))/total);
+        if(j++ == i){
+            break;
+        }
+    }
+
+    printf("\n");
+}
 int main() {
     wordRead();
     return 0;
 }
+
